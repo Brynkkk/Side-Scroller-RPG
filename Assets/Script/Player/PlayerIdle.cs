@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerIdle : PlayerState
+public class PlayerIdle : PlayerGrounded
 {
     public PlayerIdle(Player _player, PlayerStateMachine _stateMachine, string animBoolName) : base(_player, _stateMachine, animBoolName)
     {
@@ -21,5 +21,10 @@ public class PlayerIdle : PlayerState
     public override void Update()
     {
         base.Update();
+
+        if(xInput != 0)
+        {
+            stateMachine.ChangeState(player.moveState);
+        }
     }
 }

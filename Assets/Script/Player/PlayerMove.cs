@@ -2,7 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
-public class PlayerMove : PlayerState
+public class PlayerMove : PlayerGrounded
 {
     public PlayerMove(Player _player, PlayerStateMachine _stateMachine, string animBoolName) : base(_player, _stateMachine, animBoolName)
     {
@@ -22,5 +22,12 @@ public class PlayerMove : PlayerState
     public override void Update()
     {
         base.Update();
+
+        player.SetVelocity(xInput * player.moveSpeed, rb.velocity.y);
+
+        if(xInput == 0)
+        {
+            stateMachine.ChangeState(player.idleState);
+        }
     }
 }
