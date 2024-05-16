@@ -11,6 +11,8 @@ public class PlayerIdle : PlayerGrounded
     public override void Enter()
     {
         base.Enter();
+
+        player.ZeroVelocity();
     }
 
     public override void Exit()
@@ -22,7 +24,7 @@ public class PlayerIdle : PlayerGrounded
     {
         base.Update();
 
-        if(xInput != 0)
+        if(xInput != 0 && !player.isBusy)
         {
             stateMachine.ChangeState(player.moveState);
         }

@@ -5,6 +5,8 @@ using UnityEngine;
 
 public class Player : MonoBehaviour
 {
+    public bool isBusy { get; private set; }
+
     [Header("Move Info")]
     public float moveSpeed;
     public float jumpForce;
@@ -22,6 +24,9 @@ public class Player : MonoBehaviour
     [SerializeField] private Transform wallCheck;
     [SerializeField] private float wallCheckDistance;
     [SerializeField] private LayerMask whatIsGround;
+
+    [Header("Attack Details")]
+    public Vector2[] attackMovement;
 
     public int facingDirection { get; private set; } = 1;
     private bool facingRight = true;
@@ -41,6 +46,9 @@ public class Player : MonoBehaviour
     public PlayerAerial airState { get; private set; }
     public PlayerDash dashState { get; private set; }
     public PlayerWallSlide wallSlideState { get; private set; }
+    public PlayerWallJump wallJumpState { get; private set; }
+
+    public PlayerPrimaryAttack primaryAttack { get; private set; }
     #endregion
 
     private void Awake()
@@ -53,6 +61,9 @@ public class Player : MonoBehaviour
         airState = new PlayerAerial(this, stateMachine, "Jump");
         dashState = new PlayerDash(this, stateMachine, "Dash");
         wallSlideState = new PlayerWallSlide(this, stateMachine, "WallSlide");
+        wallJumpState = new PlayerWallJump(this, stateMachine, "Jump");
+
+        primaryAttack = new PlayerPrimaryAttack(this, stateMachine, "Attack");
     }
 
     private void Start()
@@ -70,8 +81,23 @@ public class Player : MonoBehaviour
         checkDashInput();
     }
 
+    public IEnumerator BusyFor(float _seconds)
+    {
+        isBusy = true;
+
+        yield return new WaitForSeconds(_seconds);
+
+        isBusy = false;
+    }
+
+    public void AnimationTrigger() => stateMachine.currState.AnimationFinishTrigger();
+
     private void checkDashInput()
     {
+        if(IsWallDetected())
+        {
+            return;
+        }
         dashUsageTimer -= Time.deltaTime;
 
         if (Input.GetKeyDown(KeyCode.LeftShift) && dashUsageTimer < 0)
@@ -89,13 +115,21 @@ public class Player : MonoBehaviour
 
     }
 
+    #region Velocity
+    public void ZeroVelocity()
+    {
+        rb.velocity = new Vector2(0, 0);
+    }
+
     public void SetVelocity(float _xVelocity, float _yVelocity)
     {
         rb.velocity = new Vector2 (_xVelocity, _yVelocity);
 
         FlipController(_xVelocity);
     }
+    #endregion
 
+    #region Collision
     public bool IsGroundDetected() => Physics2D.Raycast(groundCheck.position, Vector2.down, groundCheckDistance, whatIsGround);
     public bool IsWallDetected() => Physics2D.Raycast(wallCheck.position, Vector2.right * facingDirection, wallCheckDistance, whatIsGround);
 
@@ -104,7 +138,9 @@ public class Player : MonoBehaviour
         Gizmos.DrawLine(groundCheck.position, new Vector3(groundCheck.position.x, groundCheck.position.y - groundCheckDistance));
         Gizmos.DrawLine(wallCheck.position, new Vector3(wallCheck.position.x + wallCheckDistance, wallCheck.position.y));
     }
+    #endregion
 
+    #region Flip
     public void Flip()
     {
         facingDirection = facingDirection * -1;
@@ -123,4 +159,5 @@ public class Player : MonoBehaviour
             Flip();
         }
     }
+    #endregion
 }
