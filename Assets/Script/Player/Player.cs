@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using Unity.VisualScripting;
 using UnityEngine;
 
-public class Player : MonoBehaviour
+public class Player : Entity
 {
     public bool isBusy { get; private set; }
 
@@ -12,30 +12,13 @@ public class Player : MonoBehaviour
     public float jumpForce;
 
     [Header("Dash Info")]
-    [SerializeField] private float dashCooldown;
-    private float dashUsageTimer;
     public float dashSpeed;
     public float dashDuration;
     public float dashDirection {  get; private set; }
 
-    [Header("Collision Info")]
-    [SerializeField] private Transform groundCheck;
-    [SerializeField] private float groundCheckDistance;
-    [SerializeField] private Transform wallCheck;
-    [SerializeField] private float wallCheckDistance;
-    [SerializeField] private LayerMask whatIsGround;
-
     [Header("Attack Details")]
     public Vector2[] attackMovement;
-
-    public int facingDirection { get; private set; } = 1;
-    private bool facingRight = true;
-
-    #region Components
-    public Animator anim { get; private set; }
-    public Rigidbody2D rb { get; private set; }
-
-    #endregion
+    public float counterAttackDuration = .2f;
 
     #region States
     public PlayerStateMachine stateMachine { get; private set; }
@@ -49,10 +32,15 @@ public class Player : MonoBehaviour
     public PlayerWallJump wallJumpState { get; private set; }
 
     public PlayerPrimaryAttack primaryAttack { get; private set; }
+    public PlayerCounterAttack counterAttack { get; private set; }
+
+    public PlayerDead deadState { get; private set; }
     #endregion
 
-    private void Awake()
+    protected override void Awake()
     {
+        base.Awake();
+
         stateMachine = new PlayerStateMachine();        
 
         idleState = new PlayerIdle(this, stateMachine, "Idle");
@@ -64,18 +52,22 @@ public class Player : MonoBehaviour
         wallJumpState = new PlayerWallJump(this, stateMachine, "Jump");
 
         primaryAttack = new PlayerPrimaryAttack(this, stateMachine, "Attack");
+        counterAttack = new PlayerCounterAttack(this, stateMachine, "CounterAttack");
+
+        deadState = new PlayerDead(this, stateMachine, "Die");
     }
 
-    private void Start()
+    protected override void Start()
     {
-        anim = GetComponentInChildren<Animator>();
-        rb = GetComponent<Rigidbody2D>();
+        base.Start();
 
         stateMachine.Initialize(idleState);
     }
 
-    private void Update()
+    protected override void Update()
     {
+        base.Update();
+
         stateMachine.currState.Update();
 
         checkDashInput();
@@ -98,11 +90,9 @@ public class Player : MonoBehaviour
         {
             return;
         }
-        dashUsageTimer -= Time.deltaTime;
 
-        if (Input.GetKeyDown(KeyCode.LeftShift) && dashUsageTimer < 0)
+        if (Input.GetKeyDown(KeyCode.LeftShift) && SkillManager.instance.dash.CanUseSkill())
         {
-            dashUsageTimer = dashCooldown;
             dashDirection = Input.GetAxisRaw("Horizontal");
 
             if (dashDirection == 0)
@@ -115,49 +105,10 @@ public class Player : MonoBehaviour
 
     }
 
-    #region Velocity
-    public void ZeroVelocity()
+    public override void Die()
     {
-        rb.velocity = new Vector2(0, 0);
+        base.Die();
+
+        stateMachine.ChangeState(deadState);
     }
-
-    public void SetVelocity(float _xVelocity, float _yVelocity)
-    {
-        rb.velocity = new Vector2 (_xVelocity, _yVelocity);
-
-        FlipController(_xVelocity);
-    }
-    #endregion
-
-    #region Collision
-    public bool IsGroundDetected() => Physics2D.Raycast(groundCheck.position, Vector2.down, groundCheckDistance, whatIsGround);
-    public bool IsWallDetected() => Physics2D.Raycast(wallCheck.position, Vector2.right * facingDirection, wallCheckDistance, whatIsGround);
-
-    public void OnDrawGizmos()
-    {
-        Gizmos.DrawLine(groundCheck.position, new Vector3(groundCheck.position.x, groundCheck.position.y - groundCheckDistance));
-        Gizmos.DrawLine(wallCheck.position, new Vector3(wallCheck.position.x + wallCheckDistance, wallCheck.position.y));
-    }
-    #endregion
-
-    #region Flip
-    public void Flip()
-    {
-        facingDirection = facingDirection * -1;
-        facingRight = !facingRight;
-        transform.Rotate(0, 180, 0);
-    }
-
-    public void FlipController(float _x)
-    {
-        if(_x > 0 && !facingRight)
-        {
-            Flip();
-        }
-        else if(_x < 0 && facingRight) 
-        {
-            Flip();
-        }
-    }
-    #endregion
 }

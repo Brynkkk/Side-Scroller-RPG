@@ -12,7 +12,7 @@ public class PlayerIdle : PlayerGrounded
     {
         base.Enter();
 
-        player.ZeroVelocity();
+        player.SetZeroVelocity();
     }
 
     public override void Exit()

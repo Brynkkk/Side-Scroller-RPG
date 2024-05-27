@@ -23,6 +23,11 @@ public class PlayerGrounded : PlayerState
     {
         base.Update();
 
+        if(Input.GetKeyUp(KeyCode.Q)) 
+        {
+            stateMachine.ChangeState(player.counterAttack);
+        }
+
         if(Input.GetKeyDown(KeyCode.Mouse0))
         {
             stateMachine.ChangeState(player.primaryAttack);
